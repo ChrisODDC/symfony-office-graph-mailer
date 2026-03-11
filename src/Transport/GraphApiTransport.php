@@ -90,7 +90,7 @@ class GraphApiTransport extends AbstractApiTransport
     {
         $addressArray = [
             'emailAddress' => [
-                'address' => $address->getAddress(),
+                'address' => $address->getEncodedAddress(),
             ],
         ];
         if ($address->getName()) {

@@ -149,7 +149,7 @@ class GraphApiTransport extends AbstractApiTransport
             ];
             if ($attachment->getDisposition() === 'inline') {
                 $normalizedAttachment['isInline'] = true;
-                $normalizedAttachment['contentId'] = $attachment->getName();
+                $normalizedAttachment['contentId'] = $attachment->getContentId();
             }
             $attachments[] = $normalizedAttachment;
         }

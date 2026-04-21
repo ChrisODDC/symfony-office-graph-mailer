@@ -28,9 +28,9 @@ class GraphApiTransport extends AbstractApiTransport
         string $graphTentantId,
         string $graphClientId,
         string $graphClientSecret,
-        HttpClientInterface $client = null,
-        EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null
+        ?HttpClientInterface $client = null,
+        ?EventDispatcherInterface $dispatcher = null,
+        ?LoggerInterface $logger = null
     ) {
         $this->graphTentantId = $graphTentantId;
         $this->graphClientId = $graphClientId;
@@ -73,9 +73,9 @@ class GraphApiTransport extends AbstractApiTransport
         $payload = [
             'message' => [
                 'subject' => $email->getSubject(),
-                'toRecipients' => $this->normalizeAddresses($envelope->getRecipients() ?? $email->getTo()),
-                'ccRecipients' => $this->normalizeAddresses($envelope->getRecipients() ? [] : $email->getCc()),
-                'bccRecipients' => $this->normalizeAddresses($envelope->getRecipients() ? [] : $email->getBcc()),
+                'toRecipients' => $this->normalizeAddresses($this->getRecipients($email, $envelope)),
+                'ccRecipients' => $this->normalizeAddresses($email->getCc()),
+                'bccRecipients' => $this->normalizeAddresses($email->getBcc()),
                 'replyTo' => $this->normalizeAddresses($email->getReplyTo()),
                 'body' => $this->normalizeBody($email),
                 'attachments' => $this->normalizeAttachments($email),
@@ -90,7 +90,7 @@ class GraphApiTransport extends AbstractApiTransport
     {
         $addressArray = [
             'emailAddress' => [
-                'address' => $address->getAddress(),
+                'address' => $address->getEncodedAddress(),
             ],
         ];
         if ($address->getName()) {
@@ -141,12 +141,17 @@ class GraphApiTransport extends AbstractApiTransport
             $headers = $attachment->getPreparedHeaders();
             $filename = $headers->getHeaderParameter('Content-Disposition', 'filename');
 
-            $attachments[] = [
+            $normalizedAttachment = [
                 '@odata.type' => '#microsoft.graph.fileAttachment',
                 'contentType' => $headers->get('Content-Type')->getBody(),
                 'contentBytes' => base64_encode($attachment->getBody()),
                 'name' => $filename,
             ];
+            if ($attachment->getDisposition() === 'inline') {
+                $normalizedAttachment['isInline'] = true;
+                $normalizedAttachment['contentId'] = $attachment->getName();
+            }
+            $attachments[] = $normalizedAttachment;
         }
 
         return $attachments;
